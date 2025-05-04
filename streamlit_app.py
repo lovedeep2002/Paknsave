@@ -3,17 +3,19 @@ import pandas as pd
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 
-# --- Selenium Setup ---
-CHROMEDRIVER_PATH = "C:/chromedriver/chromedriver.exe"  # Update this path
-
+# --- Setup Chrome options for Streamlit Cloud or local ---
 chrome_options = Options()
-chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--window-size=1920,1080")
+
+# Cloud-specific path (Streamlit Cloud) — works locally if ChromeDriver is installed correctly
+chrome_options.binary_location = "/usr/bin/chromium-browser"
+CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
 
 # --- Store URLs ---
 store_urls = {
@@ -43,7 +45,7 @@ def search_product_in_stores(product_query):
         st.write(f"🔍 Searching in **{store}**...")
         try:
             driver.get(search_url)
-            time.sleep(4)  # allow JavaScript to render
+            time.sleep(4)
 
             product_title = driver.find_element(By.CLASS_NAME, "product-title").text
             price = driver.find_element(By.CLASS_NAME, "price").text
@@ -53,8 +55,7 @@ def search_product_in_stores(product_query):
                 "Product": product_title,
                 "Price": price
             })
-
-        except Exception as e:
+        except Exception:
             results.append({
                 "Store": store,
                 "Product": "Not Found",
@@ -64,7 +65,7 @@ def search_product_in_stores(product_query):
     driver.quit()
     return pd.DataFrame(results)
 
-# --- Run Search ---
+# --- Trigger Search ---
 if search_button and product_query.strip():
     st.info(f"Searching for: **{product_query}**")
     df = search_product_in_stores(product_query.strip())
