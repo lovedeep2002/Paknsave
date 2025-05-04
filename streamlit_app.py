@@ -2,20 +2,17 @@ import streamlit as st
 import pandas as pd
 import time
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
-# --- Setup Chrome options for Streamlit Cloud or local ---
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--window-size=1920,1080")
+# --- Streamlit UI ---
+st.set_page_config(page_title="Pak'nSave Price Checker", layout="centered")
+st.title("🛒 Pak'nSave Product Price Checker")
+st.markdown("Enter a product name to check prices across NZ stores (e.g. **Toblerone Milk Chocolate Bar 360g**)")
 
-# Cloud-specific path (Streamlit Cloud) — works locally if ChromeDriver is installed correctly
-chrome_options.binary_location = "/usr/bin/chromium-browser"
-CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
+product_query = st.text_input("Enter product name")
+search_button = st.button("Search Prices")
 
 # --- Store URLs ---
 store_urls = {
@@ -27,15 +24,18 @@ store_urls = {
     'Hornby': 'https://www.paknsave.co.nz/shop/online/hornby'
 }
 
-# --- Streamlit UI ---
-st.set_page_config(page_title="Pak'nSave Price Checker", layout="centered")
-st.title("🛒 Pak'nSave Product Price Checker")
-st.markdown("Enter a product name to check prices across NZ stores (e.g. **Toblerone Milk Chocolate Bar 360g**)")
+# --- Selenium Chrome options ---
+chrome_options = Options()
+chrome_options.binary_location = "/usr/bin/chromium-browser"
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--window-size=1920x1080")
 
-product_query = st.text_input("Enter product name")
-search_button = st.button("Search Prices")
+# Path to chromedriver on Streamlit Cloud
+CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
 
-# --- Search Function ---
 def search_product_in_stores(product_query):
     driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
     results = []
@@ -45,7 +45,7 @@ def search_product_in_stores(product_query):
         st.write(f"🔍 Searching in **{store}**...")
         try:
             driver.get(search_url)
-            time.sleep(4)
+            time.sleep(4)  # wait for JavaScript to load
 
             product_title = driver.find_element(By.CLASS_NAME, "product-title").text
             price = driver.find_element(By.CLASS_NAME, "price").text
