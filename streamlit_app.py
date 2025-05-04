@@ -1,76 +1,77 @@
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 import time
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
-# --- Title ---
-st.title("Pak'nSave Nationwide Product Price Checker")
-st.markdown("Check the price of a specific product in all major Pak'nSave stores across New Zealand.")
+# --- Selenium Setup ---
+CHROMEDRIVER_PATH = "C:/chromedriver/chromedriver.exe"  # Update this path
 
-# --- Input ---
-product_name = st.text_input("Enter **exact product name** (e.g., 'Toblerone Milk Chocolate Bar 360g'):")
-search_button = st.button("Search Prices")
+chrome_options = Options()
+chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--window-size=1920,1080")
 
-# --- Store List ---
+# --- Store URLs ---
 store_urls = {
     'Botany': 'https://www.paknsave.co.nz/shop/online/botany',
     'Manukau': 'https://www.paknsave.co.nz/shop/online/manukau',
     'Mill Street': 'https://www.paknsave.co.nz/shop/online/mill-street',
     'Kilbirnie': 'https://www.paknsave.co.nz/shop/online/kilbirnie',
     'Moorhouse': 'https://www.paknsave.co.nz/shop/online/moorhouse',
-    'Hornby': 'https://www.paknsave.co.nz/shop/online/hornby',
-    'Albany': 'https://www.paknsave.co.nz/shop/online/albany',
-    'Whangarei': 'https://www.paknsave.co.nz/shop/online/whangarei',
-    'Rotorua': 'https://www.paknsave.co.nz/shop/online/rotorua',
-    'Napier': 'https://www.paknsave.co.nz/shop/online/napier'
+    'Hornby': 'https://www.paknsave.co.nz/shop/online/hornby'
 }
 
-# --- Scraping Function ---
-def get_product_prices_exact(product_query):
-    results = []
+# --- Streamlit UI ---
+st.set_page_config(page_title="Pak'nSave Price Checker", layout="centered")
+st.title("🛒 Pak'nSave Product Price Checker")
+st.markdown("Enter a product name to check prices across NZ stores (e.g. **Toblerone Milk Chocolate Bar 360g**)")
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+product_query = st.text_input("Enter product name")
+search_button = st.button("Search Prices")
+
+# --- Search Function ---
+def search_product_in_stores(product_query):
+    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+    results = []
 
     for store, url in store_urls.items():
         search_url = f"{url}/search?search={product_query.replace(' ', '+')}"
+        st.write(f"🔍 Searching in **{store}**...")
         try:
-            response = requests.get(search_url, headers=headers, timeout=10)
-            soup = BeautifulSoup(response.text, 'html.parser')
+            driver.get(search_url)
+            time.sleep(4)  # allow JavaScript to render
 
-            product_tiles = soup.find_all('div', class_='product-tile')
+            product_title = driver.find_element(By.CLASS_NAME, "product-title").text
+            price = driver.find_element(By.CLASS_NAME, "price").text
 
-            found = False
-            for item in product_tiles:
-                title_tag = item.find('span', class_='product-title')
-                price_tag = item.find('span', class_='price')
-
-                if title_tag and product_query.lower() in title_tag.text.lower():
-                    found = True
-                    name = title_tag.text.strip()
-                    price = price_tag.text.strip() if price_tag else "N/A"
-                    results.append({'Store': store, 'Product': name, 'Price': price})
-                    break  # Stop after first exact match
-
-            if not found:
-                results.append({'Store': store, 'Product': 'Not Found', 'Price': 'N/A'})
-            time.sleep(1)  # polite delay
+            results.append({
+                "Store": store,
+                "Product": product_title,
+                "Price": price
+            })
 
         except Exception as e:
-            results.append({'Store': store, 'Product': 'Error', 'Price': str(e)})
+            results.append({
+                "Store": store,
+                "Product": "Not Found",
+                "Price": "N/A"
+            })
 
+    driver.quit()
     return pd.DataFrame(results)
 
-# --- Run the Search ---
-if search_button and product_name.strip():
-    st.info(f"Searching for: **{product_name}** across all stores...")
-    df = get_product_prices_exact(product_name.strip())
-    st.success("✅ Search complete.")
+# --- Run Search ---
+if search_button and product_query.strip():
+    st.info(f"Searching for: **{product_query}**")
+    df = search_product_in_stores(product_query.strip())
+
+    st.success("Search complete!")
     st.dataframe(df)
 
-    # Download CSV
     st.download_button("📥 Download Results as CSV", df.to_csv(index=False), "paknsave_prices.csv", "text/csv")
 elif search_button:
     st.error("Please enter a product name.")
