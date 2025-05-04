@@ -13,7 +13,7 @@ search_button = st.button("Search Prices")
 # --- Store List ---
 store_urls = {
     'Botany': 'https://www.paknsave.co.nz/shop/online/botany',
-    'https://www.paknsave.co.nz/shop/product/5002114_ea_000pns?name=huggies-fragrance-free-baby-wipes',
+    'https://www.paknsave.co.nz/',
     'Manukau': 'https://www.paknsave.co.nz/shop/online/manukau',
     'Mill Street': 'https://www.paknsave.co.nz/shop/online/mill-street',
     'Kilbirnie': 'https://www.paknsave.co.nz/shop/online/kilbirnie',
