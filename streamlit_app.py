@@ -12,8 +12,7 @@ search_button = st.button("Search Prices")
 
 # --- Store List ---
 store_urls = {
-    'Botany': 'https://www.paknsave.co.nz/shop/online/botany',
-    'https://www.paknsave.co.nz/',
+    'Botany': 'https://www.paknsave.co.nz/upper-north-island/auckland/botany?srsltid=AfmBOoo0amd2VJJ_vCwFeGAoTNE05XhtnoU-3ObbGnxRkPGPibqJWHbu',
     'Manukau': 'https://www.paknsave.co.nz/shop/online/manukau',
     'Mill Street': 'https://www.paknsave.co.nz/shop/online/mill-street',
     'Kilbirnie': 'https://www.paknsave.co.nz/shop/online/kilbirnie',
